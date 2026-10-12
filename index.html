@@ -99,23 +99,28 @@
         <!-- 影片慢動作與軌跡繪製區 -->
         <div class="space-y-3">
           <div class="relative bg-black rounded-lg overflow-hidden aspect-video">
-            <video id="playbackVideo" class="w-full h-full object-contain" controls></video>
-            <canvas id="trajectoryCanvas" class="absolute top-0 left-0 w-full h-full pointer-events-auto cursor-crosshair"></canvas>
+            <!-- 影片播放器 (預設可點擊控制) -->
+            <video id="playbackVideo" class="w-full h-full object-contain relative z-10" controls></video>
+            <!-- 軌跡畫布 (預設 pointer-events-none 穿透，開啟繪製模式時置頂 z-20 並允許點擊) -->
+            <canvas id="trajectoryCanvas" class="absolute top-0 left-0 w-full h-full z-0 pointer-events-none cursor-crosshair"></canvas>
           </div>
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-1">
-              <span class="text-xs font-bold text-slate-600">播放速度:</span>
+              <span class="text-xs font-bold text-slate-600">慢動作:</span>
               <button onclick="setSpeed(0.25)" class="px-2 py-1 bg-slate-200 hover:bg-emerald-500 hover:text-white rounded text-xs font-semibold">0.25x</button>
               <button onclick="setSpeed(0.5)" class="px-2 py-1 bg-slate-200 hover:bg-emerald-500 hover:text-white rounded text-xs font-semibold">0.5x</button>
               <button onclick="setSpeed(1.0)" class="px-2 py-1 bg-slate-200 hover:bg-emerald-500 hover:text-white rounded text-xs font-semibold">1.0x</button>
             </div>
             <div class="flex gap-2">
+              <button id="toggleDrawBtn" onclick="toggleDrawMode()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition">
+                <i class="fa-solid fa-pen-line mr-1"></i>開啟繪製軌跡
+              </button>
               <button onclick="clearCanvas()" class="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded text-xs font-semibold">
-                <i class="fa-solid fa-eraser mr-1"></i>清除軌跡
+                <i class="fa-solid fa-eraser mr-1"></i>清除畫布
               </button>
             </div>
           </div>
-          <p class="text-xs text-slate-500"><i class="fa-solid fa-info-circle text-blue-500"></i> 您可以播放影片並在畫面上用滑鼠或手指劃出發球弧線，以檢核過腰及發球軌跡。</p>
+          <p class="text-xs text-slate-500"><i class="fa-solid fa-info-circle text-blue-500"></i> 提示：按下 **「開啟繪製軌跡」** 即可在畫面上劃線；再按一次即可恢復播放與調整時間軸。</p>
         </div>
       </div>
     </div>
@@ -223,14 +228,11 @@
             
             <!-- 羽球場半場九宮格 -->
             <div class="relative w-full aspect-[4/3] bg-emerald-800 border-2 border-white rounded-lg flex flex-col justify-between overflow-hidden p-1.5 gap-1.5">
-              <!-- 球網區 -->
               <div class="w-full h-3 bg-slate-200/90 border-y border-dashed border-slate-500 flex items-center justify-center">
                 <span class="text-[10px] text-slate-800 font-black tracking-widest uppercase">網子 (NET)</span>
               </div>
 
-              <!-- 九宮格區域 -->
               <div class="grid grid-cols-3 grid-rows-3 gap-1.5 flex-1">
-                <!-- 第一排 (前場/近網) -->
                 <div onclick="setScoreFromZone(10)" class="court-zone bg-amber-500/90 border border-white rounded flex items-center justify-center shadow">
                   <span class="text-lg font-black text-white">10</span>
                 </div>
@@ -241,7 +243,6 @@
                   <span class="text-lg font-black text-white">10</span>
                 </div>
 
-                <!-- 第二排 (中場) -->
                 <div onclick="setScoreFromZone(6)" class="court-zone bg-emerald-600/90 border border-white rounded flex items-center justify-center shadow">
                   <span class="text-lg font-black text-white">6</span>
                 </div>
@@ -252,7 +253,6 @@
                   <span class="text-lg font-black text-white">8</span>
                 </div>
 
-                <!-- 第三排 (後場/底線) -->
                 <div onclick="setScoreFromZone(10)" class="court-zone bg-amber-500/90 border border-white rounded flex items-center justify-center shadow">
                   <span class="text-lg font-black text-white">10</span>
                 </div>
@@ -264,14 +264,13 @@
                 </div>
               </div>
 
-              <!-- 出界按鈕 -->
               <div onclick="setScoreFromZone(0)" class="court-zone h-6 bg-rose-600/90 border border-white rounded flex items-center justify-center">
                 <span class="text-xs font-bold text-white">出界 / 沒過網 (0分)</span>
               </div>
             </div>
           </div>
 
-          <!-- 分數輸入總覽與微調區 -->
+          <!-- 分數輸入總覽 -->
           <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5">
             <div>
               <label class="block text-[11px] font-semibold text-slate-600 mb-1">正手長球 1</label>
@@ -515,10 +514,29 @@
       }
     });
 
-    // 3. 軌跡繪製 Canvas 邏輯
+    // 3. 軌跡繪製 Canvas 切換與繪製邏輯
     const canvas = document.getElementById('trajectoryCanvas');
     const ctx = canvas.getContext('2d');
     let isDrawing = false;
+    let isDrawMode = false;
+
+    function toggleDrawMode() {
+      isDrawMode = !isDrawMode;
+      const btn = document.getElementById('toggleDrawBtn');
+      if (isDrawMode) {
+        canvas.classList.remove('pointer-events-none', 'z-0');
+        canvas.classList.add('pointer-events-auto', 'z-20');
+        btn.innerHTML = '<i class="fa-solid fa-play mr-1"></i>結束繪製 (恢復播放)';
+        btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+        btn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+      } else {
+        canvas.classList.remove('pointer-events-auto', 'z-20');
+        canvas.classList.add('pointer-events-none', 'z-0');
+        btn.innerHTML = '<i class="fa-solid fa-pen-line mr-1"></i>開啟繪製軌跡';
+        btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+        btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+      }
+    }
 
     function resizeCanvas() {
       if (canvas && canvas.parentElement) {
@@ -543,6 +561,7 @@
     }
 
     function startDraw(e) {
+      if (!isDrawMode) return;
       isDrawing = true;
       const pos = getPos(e);
       ctx.beginPath();
@@ -552,7 +571,7 @@
     }
 
     function draw(e) {
-      if (!isDrawing) return;
+      if (!isDrawing || !isDrawMode) return;
       const pos = getPos(e);
       ctx.lineTo(pos.x, pos.y);
       ctx.stroke();
@@ -595,7 +614,7 @@
 
       fetch(gasUrl, {
         method: "POST",
-        mode: "no-cors", // 使用 no-cors 避免瀏覽器跨域攔截
+        mode: "no-cors",
         headers: {
           "Content-Type": "text/plain;charset=utf-8"
         },
