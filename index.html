@@ -18,7 +18,7 @@
       cursor: pointer;
     }
     .court-zone:hover {
-      filter: brightness(1.15);
+      filter: brightness(1.2);
       transform: scale(0.98);
     }
   </style>
@@ -56,8 +56,8 @@
           <input type="text" id="studentClass" placeholder="例如：高一1班" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-500 mb-1">座號</label>
-          <input type="number" id="seatNumber" placeholder="例如：05" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+          <label class="block text-xs font-semibold text-slate-500 mb-1">學號</label>
+          <input type="text" id="studentId" placeholder="例如：112001" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-500 mb-1">學生姓名</label>
@@ -115,7 +115,7 @@
               </button>
             </div>
           </div>
-          <p class="text-xs text-slate-500"><i class="fa-solid fa-info-circle text-blue-500"></i> 您可以播放影片並在畫面上用滑鼠或手指直接劃出羽球弧線與擊球位置，以檢核過腰及發球軌跡。</p>
+          <p class="text-xs text-slate-500"><i class="fa-solid fa-info-circle text-blue-500"></i> 您可以播放影片並在畫面上用滑鼠或手指劃出發球弧線，以檢核過腰及發球軌跡。</p>
         </div>
       </div>
     </div>
@@ -132,10 +132,10 @@
           <span class="text-sm font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full" id="actionTotalDisplay">動作得分：0 / 40 分</span>
         </div>
 
-        <!-- 正手發長球 -->
+        <!-- 正手發長球 (20%) -->
         <div>
           <h3 class="font-bold text-emerald-800 text-sm mb-2 flex items-center gap-1">
-            <i class="fa-solid fa-circle-right"></i> 正手發長球 (右撇子)
+            <i class="fa-solid fa-circle-right"></i> 正手發長球（右撇子 - 20%）
           </h3>
           <div class="overflow-x-auto">
             <table class="w-full text-xs text-left border-collapse">
@@ -153,12 +153,18 @@
               </tbody>
             </table>
           </div>
+          <div class="mt-2 p-2 bg-rose-50 border border-rose-200 rounded-lg flex items-center justify-between text-xs text-rose-800">
+            <span class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>正手違反發球規定：</span>
+            <label class="flex items-center gap-1 font-semibold cursor-pointer">
+              <input type="checkbox" id="fh_foul" onchange="calculateScore()" class="w-4 h-4 text-rose-600 rounded"> 勾選扣 5 分 (-5)
+            </label>
+          </div>
         </div>
 
-        <!-- 反手發短球 -->
-        <div>
+        <!-- 反手發短球 (20%) -->
+        <div class="pt-2 border-t">
           <h3 class="font-bold text-emerald-800 text-sm mb-2 flex items-center gap-1">
-            <i class="fa-solid fa-circle-right"></i> 反手發短球 (右撇子)
+            <i class="fa-solid fa-circle-right"></i> 反手發短球（右撇子 - 20%）
           </h3>
           <div class="overflow-x-auto">
             <table class="w-full text-xs text-left border-collapse">
@@ -176,6 +182,12 @@
               </tbody>
             </table>
           </div>
+          <div class="mt-2 p-2 bg-rose-50 border border-rose-200 rounded-lg flex items-center justify-between text-xs text-rose-800">
+            <span class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>反手違反發球規定：</span>
+            <label class="flex items-center gap-1 font-semibold cursor-pointer">
+              <input type="checkbox" id="bh_foul" onchange="calculateScore()" class="w-4 h-4 text-rose-600 rounded"> 勾選扣 5 分 (-5)
+            </label>
+          </div>
         </div>
       </div>
 
@@ -191,7 +203,7 @@
 
           <!-- 步驟 1：選擇目前要給分的球數 -->
           <div class="mb-4">
-            <label class="block text-xs font-bold text-slate-600 mb-1.5">1. 請選擇當前要記錄的發球：</label>
+            <label class="block text-xs font-bold text-slate-600 mb-1.5">1. 請點選當前欲給分的發球顆數：</label>
             <div class="grid grid-cols-3 gap-1.5 text-xs">
               <button onclick="selectServeSlot('fh1')" id="btn_fh1" class="serve-slot-btn py-1.5 px-2 border rounded-lg font-bold bg-emerald-600 text-white shadow">正手 1</button>
               <button onclick="selectServeSlot('fh2')" id="btn_fh2" class="serve-slot-btn py-1.5 px-2 border rounded-lg font-bold bg-slate-100 text-slate-700">正手 2</button>
@@ -202,40 +214,59 @@
             </div>
           </div>
 
-          <!-- 步驟 2：球場得分區域示意圖 (互動區) -->
-          <div class="mb-4 border rounded-xl p-3 bg-emerald-900 text-white shadow-inner">
+          <!-- 步驟 2：九宮格落點地圖（對應附圖配分） -->
+          <div class="mb-4 border rounded-xl p-3 bg-emerald-950 text-white shadow-inner">
             <div class="flex justify-between items-center mb-2">
-              <span class="text-xs font-bold text-emerald-200">2. 點擊球場落點區域直接帶入分數：</span>
+              <span class="text-xs font-bold text-emerald-200">2. 點擊下方球場落點區域直接帶入分數：</span>
               <span id="activeSlotBadge" class="text-xs bg-amber-400 text-slate-900 font-extrabold px-2 py-0.5 rounded">正在給分：正手長球 1</span>
             </div>
             
-            <!-- 羽球半場示意圖 -->
-            <div class="relative w-full aspect-[4/3] bg-emerald-700 border-2 border-white rounded-lg flex flex-col justify-between overflow-hidden p-1 gap-1">
-              <!-- 球網 -->
-              <div class="w-full h-2 bg-slate-200/80 border-y border-dashed border-slate-400 flex items-center justify-center">
-                <span class="text-[9px] text-slate-700 font-extrabold tracking-widest uppercase">網子 (NET)</span>
+            <!-- 羽球場半場九宮格 (對應照片配分) -->
+            <div class="relative w-full aspect-[4/3] bg-emerald-800 border-2 border-white rounded-lg flex flex-col justify-between overflow-hidden p-1.5 gap-1.5">
+              <!-- 球網區 -->
+              <div class="w-full h-3 bg-slate-200/90 border-y border-dashed border-slate-500 flex items-center justify-center">
+                <span class="text-[10px] text-slate-800 font-black tracking-widest uppercase">網子 (NET)</span>
               </div>
 
-              <!-- 前場短球高分區 -->
-              <div onclick="setScoreFromZone(10)" class="court-zone flex-1 bg-amber-500/80 border border-white/80 rounded flex flex-col items-center justify-center">
-                <span class="text-xs font-black text-white">短球壓線區 (10分)</span>
-                <span class="text-[10px] text-amber-100">貼網前場完美落點</span>
+              <!-- 九宮格區域 -->
+              <div class="grid grid-cols-3 grid-rows-3 gap-1.5 flex-1">
+                <!-- 第一排 (前場/近網) -->
+                <div onclick="setScoreFromZone(10)" class="court-zone bg-amber-500/90 border border-white rounded flex items-center justify-center shadow">
+                  <span class="text-lg font-black text-white">10</span>
+                </div>
+                <div onclick="setScoreFromZone(6)" class="court-zone bg-emerald-600/90 border border-white rounded flex items-center justify-center shadow">
+                  <span class="text-lg font-black text-white">6</span>
+                </div>
+                <div onclick="setScoreFromZone(10)" class="court-zone bg-amber-500/90 border border-white rounded flex items-center justify-center shadow">
+                  <span class="text-lg font-black text-white">10</span>
+                </div>
+
+                <!-- 第二排 (中場) -->
+                <div onclick="setScoreFromZone(6)" class="court-zone bg-emerald-600/90 border border-white rounded flex items-center justify-center shadow">
+                  <span class="text-lg font-black text-white">6</span>
+                </div>
+                <div onclick="setScoreFromZone(5)" class="court-zone bg-emerald-700/90 border border-white rounded flex items-center justify-center shadow">
+                  <span class="text-lg font-black text-white">5</span>
+                </div>
+                <div onclick="setScoreFromZone(8)" class="court-zone bg-emerald-600/90 border border-white rounded flex items-center justify-center shadow">
+                  <span class="text-lg font-black text-white">8</span>
+                </div>
+
+                <!-- 第三排 (後場/底線) -->
+                <div onclick="setScoreFromZone(10)" class="court-zone bg-amber-500/90 border border-white rounded flex items-center justify-center shadow">
+                  <span class="text-lg font-black text-white">10</span>
+                </div>
+                <div onclick="setScoreFromZone(7)" class="court-zone bg-emerald-600/90 border border-white rounded flex items-center justify-center shadow">
+                  <span class="text-lg font-black text-white">7</span>
+                </div>
+                <div onclick="setScoreFromZone(10)" class="court-zone bg-amber-500/90 border border-white rounded flex items-center justify-center shadow">
+                  <span class="text-lg font-black text-white">10</span>
+                </div>
               </div>
 
-              <!-- 中場次高分區 -->
-              <div onclick="setScoreFromZone(8)" class="court-zone flex-1 bg-emerald-600/90 border border-white/80 rounded flex flex-col items-center justify-center">
-                <span class="text-xs font-bold text-white">中場區域 (8分)</span>
-              </div>
-
-              <!-- 後場長球壓線高分區 -->
-              <div onclick="setScoreFromZone(10)" class="court-zone flex-1 bg-amber-500/80 border border-white/80 rounded flex flex-col items-center justify-center">
-                <span class="text-xs font-black text-white">長球底線區 (10分)</span>
-                <span class="text-[10px] text-amber-100">深遠底線完美落點</span>
-              </div>
-
-              <!-- 出界/界外區 -->
-              <div onclick="setScoreFromZone(5)" class="court-zone h-6 bg-rose-600/80 border border-white/80 rounded flex items-center justify-center">
-                <span class="text-[10px] font-bold text-white">一般落點 / 偏差 (5分)</span>
+              <!-- 出界按鈕 -->
+              <div onclick="setScoreFromZone(0)" class="court-zone h-6 bg-rose-600/90 border border-white rounded flex items-center justify-center">
+                <span class="text-xs font-bold text-white">出界 / 沒過網 (0分)</span>
               </div>
             </div>
           </div>
@@ -272,13 +303,14 @@
         <!-- 規則說明區 -->
         <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
           <h3 class="font-bold text-amber-900 text-xs mb-1.5 flex items-center gap-1">
-            <i class="fa-solid fa-triangle-exclamation"></i> 羽球發球規則違例提醒
+            <i class="fa-solid fa-triangle-exclamation"></i> 羽球發球違例規定 (每項違反扣5分)
           </h3>
           <ul class="text-[11px] text-amber-800 space-y-0.5 list-disc list-inside">
-            <li><strong>不得過腰：</strong>擊球瞬間不得高於 115 公分。</li>
+            <li><strong>不得過腰：</strong>擊球瞬間球不得高於 115 公分。</li>
             <li><strong>拍頭朝下：</strong>擊球瞬間拍頭必須明顯朝下。</li>
             <li><strong>未先擊球托：</strong>擊球時必須先擊中羽球球托。</li>
-            <li><strong>腳違例：</strong>發球時雙腳不得踩線、離地或移動。</li>
+            <li><strong>不正當行為：</strong>假動作或揮拍中斷。</li>
+            <li><strong>腳違例：</strong>發球或接發球時雙腳踩線、離地或移動。</li>
           </ul>
         </div>
       </div>
@@ -307,7 +339,7 @@
           <thead>
             <tr class="bg-slate-100 border-b text-slate-600">
               <th class="p-2">時間</th>
-              <th class="p-2">班級座號</th>
+              <th class="p-2">班級 (學號)</th>
               <th class="p-2">姓名</th>
               <th class="p-2">動作(40%)</th>
               <th class="p-2">落點(60%)</th>
@@ -326,21 +358,17 @@
   </main>
 
   <script>
-    // 1. 動作資料與名稱對應
+    // 1. 動作資料定義 (依照新配分比例)
     const forehandItems = [
-      { name: "態度：首要專注、盯緊目標、謹慎態度", weight: 15 },
-      { name: "蓄勢待發：（站姿）左腳在前右腳在後，身體面向擊球方向", weight: 5 },
+      { name: "蓄勢待發：（站姿）左腳在前右腳在後（重心），身體面向擊球方向", weight: 5 },
       { name: "大鵬展翅：左手持球，右手持拍挺胸", weight: 5 },
-      { name: "海底撈月：將球放下後揮拍，當球落到膝蓋位置時擊球", weight: 5 },
-      { name: "奔向未來：順勢將球拍收到左邊耳朵", weight: 5 },
-      { name: "未違反發球規定", weight: 5 }
+      { name: "海底撈月：將球放下後揮拍，當球落到膝蓋位置時擊球（手腕發力）", weight: 5 },
+      { name: "奔向未來：順勢將球拍收到左邊耳朵", weight: 5 }
     ];
 
     const backhandItems = [
-      { name: "態度：首要專注、盯緊目標、謹慎態度", weight: 15 },
       { name: "蓄勢待發：右腳在前左腳後", weight: 10 },
-      { name: "大拇指點讚：食指帶動拍頭往後引拍，利用大拇指發力", weight: 10 },
-      { name: "未違反發球規定", weight: 5 }
+      { name: "大拇指點讚：食指帶動拍頭往後水平引拍，利用大拇指發力擊球", weight: 10 }
     ];
 
     const slotNames = {
@@ -395,15 +423,28 @@
 
     function calculateScore() {
       let actionScore = 0;
+      
+      // 計算正手基本分
       forehandItems.forEach((_, i) => {
         const checked = document.querySelector(`input[name="fh_${i}"]:checked`);
         if (checked) actionScore += parseFloat(checked.value);
       });
+      // 正手違例扣分 (-5)
+      if (document.getElementById('fh_foul').checked) {
+        actionScore = Math.max(0, actionScore - 5);
+      }
+
+      // 計算反手基本分
       backhandItems.forEach((_, i) => {
         const checked = document.querySelector(`input[name="bh_${i}"]:checked`);
         if (checked) actionScore += parseFloat(checked.value);
       });
+      // 反手違例扣分 (-5)
+      if (document.getElementById('bh_foul').checked) {
+        actionScore = Math.max(0, actionScore - 5);
+      }
 
+      // 計算落點得分
       let landingScore = 0;
       document.querySelectorAll('.landing-input').forEach(input => {
         landingScore += parseFloat(input.value || 0);
@@ -479,7 +520,7 @@
       }
     });
 
-    // 3. 軌跡繪製 Canvas 邏輯 (修正安全邊界與點擊)
+    // 3. 軌跡繪製 Canvas 邏輯
     const canvas = document.getElementById('trajectoryCanvas');
     const ctx = canvas.getContext('2d');
     let isDrawing = false;
@@ -528,7 +569,7 @@
     // 4. 資料儲存與歷史紀錄
     function saveRecord() {
       const studentClass = document.getElementById('studentClass').value;
-      const seatNumber = document.getElementById('seatNumber').value;
+      const studentId = document.getElementById('studentId').value;
       const studentName = document.getElementById('studentName').value;
       const evaluatorName = document.getElementById('evaluatorName').value;
 
@@ -542,7 +583,7 @@
         id: Date.now(),
         time: new Date().toLocaleString(),
         studentClass,
-        seatNumber,
+        studentId,
         studentName,
         evaluatorName,
         actionScore: scores.actionScore,
@@ -550,6 +591,7 @@
         totalScore: scores.totalScore
       };
 
+      // 儲存至本地
       let history = JSON.parse(localStorage.getItem('badminton_records') || '[]');
       history.unshift(record);
       localStorage.setItem('badminton_records', JSON.stringify(history));
@@ -565,7 +607,7 @@
       tbody.innerHTML = history.map(item => `
         <tr>
           <td class="p-2 text-slate-500">${item.time}</td>
-          <td class="p-2">${item.studentClass} (${item.seatNumber}號)</td>
+          <td class="p-2">${item.studentClass} (${item.studentId || '-'})</td>
           <td class="p-2 font-bold">${item.studentName}</td>
           <td class="p-2">${item.actionScore.toFixed(1)}</td>
           <td class="p-2">${item.landingScore}</td>
@@ -592,9 +634,9 @@
         return;
       }
 
-      let csv = "\uFEFF時間,班級,座號,姓名,動作得分(40%),落點得分(60%),總分,評分者\n";
+      let csv = "\uFEFF時間,班級,學號,姓名,動作得分(40%),落點得分(60%),總分,評分者\n";
       history.forEach(r => {
-        csv += `"${r.time}","${r.studentClass}","${r.seatNumber}","${r.studentName}",${r.actionScore},${r.landingScore},${r.totalScore},"${r.evaluatorName}"\n`;
+        csv += `"${r.time}","${r.studentClass}","${r.studentId || ''}","${r.studentName}",${r.actionScore},${r.landingScore},${r.totalScore},"${r.evaluatorName}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
